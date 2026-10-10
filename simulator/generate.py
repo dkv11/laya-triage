@@ -10,6 +10,7 @@ ASSETS = {
 
 FAULT_SCHEDULE = [
     {"asset_id": "P-101", "fault": "bearing_wear", "start": 600, "end": 900},
+    {"asset_id": "B-201", "fault": "phase_imbalance", "start": 200, "end": 500},
 ]
 
 
@@ -31,9 +32,19 @@ def apply_bearing_wear(row, progress):
     row["bearing_temp_c"] += 15 * progress
     return row
 
+def apply_phase_imbalance(row, progress):
+    """Phase imbalance: R phase current rises, B phase drops, motor heats up."""
+    row["current_r_a"] *= 1 + 0.25 * progress
+    row["current_b_a"] *= 1 - 0.10 * progress
+    row["bearing_temp_c"] += 8 * progress
+
+    return row
+
 FAULT_FUNCTIONS = {
     "bearing_wear": apply_bearing_wear,
+    "phase_imbalance": apply_phase_imbalance,
 }
+
 
 
 if __name__ == "__main__":
