@@ -1,0 +1,11 @@
+1. Project setup ← you are here
+2. Sensor data simulator (normal behaviour plus injected faults)
+3. SQLite database and tables
+4. Rule engine (thresholds, trends, sensor health)
+5. LLM step: understand the operator's message via OpenRouter
+6. Combine both into a decision (team, issue type, priority, reason)
+7. FastAPI endpoints
+Chat UI
+8. Feedback and correction loop (your future training data)
+9. Export the dataset, fine-tune the SLM, host it, switch .env
+10. README, demo video, GitHub and LinkedIn
