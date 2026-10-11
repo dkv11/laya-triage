@@ -1,3 +1,11 @@
+from app.config import ASSETS
+from app.db import get_recent_readings, save_decision, save_message
+from app.llm import MODEL, extract_message
+from app.rules import run_rules
+
+SNAPSHOT_COLUMNS = ["vibration_mm_s", "bearing_temp_c", "current_r_a", "current_y_a",
+                    "current_b_a", "flow_m3h", "pressure_bar"]
+
 SEVERITY_RANK = {"watch": 1, "warning": 2, "alarm": 3}
 
 SAFETY_CHECKS = [
@@ -110,3 +118,32 @@ def decide(extraction, findings_by_asset):
         "reason": reasons,
         "first_checks": checks,
     }
+
+def sensor_snapshot(at_time):
+    """For every machine: 10-minute averages and rule findings at this moment."""
+    snapshot = {}
+    for asset_id, baseline in ASSETS.items():
+        df = get_recent_readings(asset_id, at_time)
+        if df.empty:
+            snapshot[asset_id] = {"averages": {}, "findings": []}
+            continue
+        snapshot[asset_id] = {
+            "averages": df[SNAPSHOT_COLUMNS].mean().round(2).to_dict(),
+            "findings": run_rules(df, baseline),
+        }
+    return snapshot
+
+
+def triage(text, at_time, operator_name=None):
+    """Full pipeline: sensors + LLM → decision → saved to the database."""
+    snapshot = sensor_snapshot(at_time)
+    extraction, raw = extract_message(text)
+
+    findings_by_asset = {a: s["findings"] for a, s in snapshot.items()}
+    decision = decide(extraction, findings_by_asset)
+
+    message_id = save_message(text, extraction["asset_id"], operator_name, at_time)
+    decision_id = save_decision(message_id, decision, snapshot, MODEL, raw, at_time)
+
+    return {"message_id": message_id, "decision_id": decision_id, "extraction": extraction, **decision}
+

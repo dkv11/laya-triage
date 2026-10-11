@@ -1,5 +1,6 @@
 import sqlite3
 import pandas as pd
+import json
 from pathlib import Path
 
 
@@ -89,3 +90,36 @@ def get_recent_readings(asset_id, end_time, minutes=10):
     with get_connection() as conn:
         return pd.read_sql_query(query, conn, params=params)
     
+def save_message(text, asset_id=None, operator_name=None, created_at=None):
+    """Store an operator message. Returns its new id."""
+    with get_connection() as conn:
+        cur = conn.execute(
+            "INSERT INTO operator_messages (text, asset_id, operator_name, created_at) "
+            "VALUES (?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP))",
+            (text, asset_id, operator_name, created_at),
+        )
+        return cur.lastrowid
+
+
+def save_decision(message_id, decision, sensor_snapshot, model, raw_output, created_at=None):
+    """Store Laya's decision, with exactly what it saw. Returns its new id."""
+    with get_connection() as conn:
+        cur = conn.execute(
+            "INSERT INTO decisions (message_id, asset_id, sensor_snapshot, team, issue_type, priority, "
+            "reason, first_checks, model, raw_output, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP))",
+            (
+                message_id,
+                decision["asset_id"],
+                json.dumps(sensor_snapshot),
+                decision["team"],
+                decision["issue_type"],
+                decision["priority"],
+                json.dumps(decision["reason"]),
+                json.dumps(decision["first_checks"]),
+                model,
+                raw_output,
+                created_at,
+            ),
+        )
+        return cur.lastrowid
