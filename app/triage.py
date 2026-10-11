@@ -115,6 +115,9 @@ def decide(extraction, findings_by_asset):
         checks += RULE_CHECKS[top["rule"]]
     else:
         checks += TEAM_CHECKS[team]
+    if top and top["team"] != team:
+        checks += [f"Also ({top['team']}): {c}" for c in RULE_CHECKS[top["rule"]]]
+
 
     return {
         "asset_id": asset_id,

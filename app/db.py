@@ -123,3 +123,45 @@ def save_decision(message_id, decision, sensor_snapshot, model, raw_output, crea
             ),
         )
         return cur.lastrowid
+
+
+def list_decisions(limit=20):
+    """Latest decisions with their message and any feedback, newest first."""
+    query = """
+        SELECT d.id, d.created_at, m.text, m.operator_name,
+               d.asset_id, d.team, d.issue_type, d.priority, d.reason, d.first_checks, d.model,
+               f.is_correct, f.correct_team, f.correct_issue_type, f.correct_priority, f.comment
+        FROM decisions d
+        JOIN operator_messages m ON m.id = d.message_id
+        LEFT JOIN feedback f ON f.decision_id = d.id
+        ORDER BY d.id DESC
+        LIMIT ?
+    """
+    with get_connection() as conn:
+        rows = conn.execute(query, (limit,)).fetchall()
+    result = []
+    for row in rows:
+        item = dict(row)
+        item["reason"] = json.loads(item["reason"])
+        item["first_checks"] = json.loads(item["first_checks"])
+        result.append(item)
+    return result
+
+
+def get_decision(decision_id):
+    """One decision row as a dict, or None if it doesn't exist."""
+    with get_connection() as conn:
+        row = conn.execute("SELECT * FROM decisions WHERE id = ?", (decision_id,)).fetchone()
+    return dict(row) if row else None
+
+
+def save_feedback(decision_id, is_correct, correct_team=None, correct_issue_type=None,
+                  correct_priority=None, comment=None, corrected_by=None):
+    """Store an engineer's verdict on a decision. Returns the new feedback id."""
+    with get_connection() as conn:
+        cur = conn.execute(
+            "INSERT INTO feedback (decision_id, is_correct, correct_team, correct_issue_type, "
+            "correct_priority, comment, corrected_by) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (decision_id, is_correct, correct_team, correct_issue_type, correct_priority, comment, corrected_by),
+        )
+        return cur.lastrowid

@@ -103,7 +103,7 @@ def check_imbalance_rising(df, baseline):
         "rule": "imbalance_rising",
         "team": "electrical",
         "severity": "watch",
-        "evidence": f"phase imbalance {imbalance:.1f}% is above healthy level (watch {PHASE_IMBALANCE_WATCH}%), "
+        "evidence": f"phase imbalance {imbalance:.2f}% is above healthy level (watch {PHASE_IMBALANCE_WATCH}%), "
                     f"phase currents R:{r:.1f}A, Y:{y:.1f}A, B:{b:.1f}A",
     }
 

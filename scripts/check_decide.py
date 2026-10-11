@@ -12,6 +12,8 @@ IMBALANCE_ALARM = {"rule": "phase_imbalance", "team": "electrical", "severity": 
 IMBALANCE_WARN = {"rule": "phase_imbalance", "team": "electrical", "severity": "warning", "evidence": "imbalance 7%"}
 BEARING_WARN = {"rule": "bearing_wear", "team": "mechanical", "severity": "warning", "evidence": "vibration 5.8"}
 FLOW_STUCK = {"rule": "flow_sensor_stuck", "team": "instrumentation", "severity": "warning", "evidence": "frozen 118.4"}
+IMBALANCE_WATCH = {"rule": "imbalance_rising", "team": "electrical", "severity": "watch", "evidence": "imbalance 3.04%"}
+
 
 CASES = [
     # name, extraction, findings_by_asset, expected (asset, team, issue_type, priority)
@@ -39,6 +41,11 @@ CASES = [
      ext(is_problem=False),
      {"P-101": [], "B-201": []},
      (None, "unknown", "routine", 1)),
+    ("vague noise, sensors see early electrical",
+     ext(asset_id="B-201", team_hint="mechanical"),
+     {"P-101": [], "B-201": [IMBALANCE_WATCH]},
+     ("B-201", "mechanical", "corrective", 2)),
+
 ]
 
 for name, extraction, findings, expected in CASES:
