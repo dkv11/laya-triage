@@ -158,6 +158,12 @@
             opacity: .5;
             cursor: wait;
         }
+        .feedback { margin-top:8px; display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+        .feedback select, .feedback input { padding:6px; border-radius:6px; border:1px solid var(--border);
+                                        background:var(--bg); color:var(--text); font-size:13px; }
+        button.small { padding:6px 10px; font-size:13px; }
+        button.secondary { background:transparent; color:var(--text); border:1px solid var(--border); }
+
     </style>
 </head>
 
@@ -208,6 +214,68 @@
             parent.append(ul);
         }
 
+        // Send the engineer's verdict to the API and show the result in place of the buttons
+        async function sendFeedback(decisionId, body, area) {
+        const response = await fetch(`/decisions/${decisionId}/feedback`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({...body, corrected_by: "Engineer"}),
+        });
+        let message;
+        if (response.ok) message = "✓ Saved. Thank you, this becomes training data for Laya.";
+        else if (response.status === 409) message = "Already reviewed.";
+        else message = `Error ${response.status}`;
+        area.replaceChildren(el("span", "meta", message));
+        }
+
+        // A <select> dropdown with the current value pre-selected
+        function makeSelect(options, current) {
+        const select = el("select");
+        for (const [value, label] of options) {
+            const option = el("option", null, label);
+            option.value = value;
+            if (value === String(current)) option.selected = true;
+            select.append(option);
+        }
+        return select;
+        }
+
+        // Replace the buttons with a small correction form
+        function showCorrectionForm(d, area) {
+        const team = makeSelect([["mechanical", "Mechanical"], ["electrical", "Electrical"],
+                                ["instrumentation", "Instrumentation"], ["unknown", "Unknown"]], d.team);
+        const priority = makeSelect([["1", "P1"], ["2", "P2"], ["3", "P3"], ["4", "P4"], ["5", "P5"]], d.priority);
+        const comment = el("input");
+        comment.placeholder = "What was actually wrong? (optional)";
+        const hint = el("span", "meta");
+        const save = el("button", "small", "Save correction");
+
+        save.onclick = () => {
+            const body = {is_correct: false, comment: comment.value.trim() || null};
+            if (team.value !== d.team) body.correct_team = team.value;
+            if (Number(priority.value) !== d.priority) body.correct_priority = Number(priority.value);
+            if (!body.correct_team && !body.correct_priority) {
+            hint.textContent = "Change the team or the priority first.";
+            return;
+            }
+            sendFeedback(d.decision_id, body, area);
+        };
+
+        area.replaceChildren(el("span", "meta", "Correct answer:"), team, priority, comment, save, hint);
+        }
+
+        // "Was this right?" with two buttons
+        function feedbackControls(d) {
+        const area = el("div", "feedback");
+        const yes = el("button", "small", "Correct");
+        const no = el("button", "small secondary", "Wrong");
+        yes.onclick = () => sendFeedback(d.decision_id, {is_correct: true}, area);
+        no.onclick = () => showCorrectionForm(d, area);
+        area.append(el("span", "meta", "Was this right?"), yes, no);
+        return area;
+        }
+
+
         function showDecision(d) {
             const box = el("div", "msg laya");
             const head = el("div");
@@ -219,6 +287,8 @@
             addList(box, "Why", d.reason);
             addList(box, "Check first", d.first_checks);
             box.append(el("div", "meta", `Decision #${d.decision_id} · answered by ${d.model}`));
+            box.append(feedbackControls(d));
+
             chat.append(box);
             chat.scrollTop = chat.scrollHeight;
         }
