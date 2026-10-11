@@ -4,6 +4,10 @@
 
 ![Laya Triage overview](media/laya_linkedin.png)
 
+### Demo
+
+![Chat demo: three operator messages triaged with sensor evidence](media/demo.gif)
+
 > Built on a simulated plant. No real company data is used anywhere in this repository.
 
 ## The problem
