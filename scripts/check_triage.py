@@ -9,7 +9,8 @@ TESTS = [
 for text, at_time in TESTS:
     result = triage(text, at_time, operator_name="Ramesh")
     print(f"\n>>> [{at_time}] {text}")
-    print(f"    → {result['asset_id']} | {result['team']} | {result['issue_type']} | priority {result['priority']}")
+    print(f"    :- {result['asset_id']} | {result['team']} | {result['issue_type']} | priority {result['priority']}  [{result['model']}]")
+
     for line in result["reason"]:
         print(f"      • {line}")
     print(f"    First check: {result['first_checks'][0]}")
