@@ -1,5 +1,7 @@
 import sqlite3
+import pandas as pd
 from pathlib import Path
+
 
 DB_PATH = Path("data/laya.db")
 
@@ -72,3 +74,18 @@ def init_db():
                 corrected_by TEXT
             )
         """)
+
+def get_recent_readings(asset_id, end_time, minutes=10):
+    """Readings for one asset in the window (end_time - minutes, end_time]."""
+    query = """
+        SELECT * FROM readings
+        WHERE asset_id = ?
+          AND timestamp > datetime(?, ?)
+          AND timestamp <= ?
+        ORDER BY timestamp
+    """
+
+    params = (asset_id, end_time, f"-{minutes} minutes", end_time)
+    with get_connection() as conn:
+        return pd.read_sql_query(query, conn, params=params)
+    
