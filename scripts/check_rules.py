@@ -1,8 +1,8 @@
 from app.config import ASSETS
 from app.db import get_recent_readings
-from app.rules import check_bearing_wear, check_phase_imbalance, check_flow_sensor_stuck
+from app.rules import run_rules
 
-RULES = [check_bearing_wear, check_phase_imbalance, check_flow_sensor_stuck]
+
 
 CASES = [
     ("P-101", "2026-10-10 05:00:00", "healthy"),
@@ -13,7 +13,7 @@ CASES = [
 
 for asset_id, end_time, expected in CASES:
     df = get_recent_readings(asset_id, end_time)
-    findings = [f for rule in RULES if (f := rule(df, ASSETS[asset_id]))]
+    findings = run_rules(df, ASSETS[asset_id])
     print(f"\n{asset_id} @ {end_time}  (expected: {expected})")
     if not findings:
         print("   no findings")
