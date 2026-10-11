@@ -8,7 +8,7 @@ import json
 SNAPSHOT_COLUMNS = ["vibration_mm_s", "bearing_temp_c", "current_r_a", "current_y_a",
                     "current_b_a", "flow_m3h", "pressure_bar"]
 
-LAYA_MODEL_NAME = "laya-multilingual"
+LAYA_MODEL_NAME = "laya-maint-v1"  # the fine-tuned model we use for Laya; set in .env to override
 LAYA_MIN_CONFIDENCE = 0.5   # below this, ask the LLM; tuned on scripts/compare_models.py, revisit with more data
 
 
