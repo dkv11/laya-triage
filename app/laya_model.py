@@ -1,3 +1,4 @@
+import os
 from dotenv import load_dotenv
 load_dotenv()
 from laya import Router
@@ -32,11 +33,13 @@ _router = None
 
 
 def get_router():
-    """Load Laya once, on first use (loading takes seconds; predicting takes milliseconds)."""
+    """Load Laya once, on first use. Set LAYA_CHECKPOINT in .env to use a fine-tuned version."""
     global _router
     if _router is None:
-        _router = Router()
+        checkpoint = os.environ.get("LAYA_CHECKPOINT")
+        _router = Router(models={"multilingual": checkpoint} if checkpoint else None)
     return _router
+
 
 
 def classify_message(text):

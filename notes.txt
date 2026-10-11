@@ -9,3 +9,72 @@
 9. Feedback and correction loop (your future training data)
 10. Export the dataset, fine-tune the SLM, host it, switch .env
 11. README, demo video, GitHub and LinkedIn
+
+==================================================================
+EVALUATION RESULTS (scripts/evaluate.py)
+==================================================================
+
+--- BEFORE fine-tuning: base laya-multilingual (zero-shot) ---
+Date: 2026-10-11
+Train set: data/train.jsonl | Threshold: confidence >= 0.5
+
+data/test_synthetic.jsonl (62 messages)
+  team        accuracy 29/62 = 47%
+  asset       accuracy 56/62 = 90%
+  is_problem  accuracy 11/62 = 18%
+  Laya would handle 11/62 = 18%, accuracy on those: 7/11
+  avg confidence when right: 0.44
+  avg confidence when wrong: 0.34
+
+data/test_real.jsonl (5 messages)
+  team        accuracy 4/5 = 80%
+  asset       accuracy 4/5 = 80%
+  is_problem  accuracy 1/4 = 25%
+  Laya would handle 1/5 = 20%, accuracy on those: 1/1
+  avg confidence when right: 0.29
+  avg confidence when wrong: 0.34
+
+--- AFTER fine-tuning: checkpoints/laya-maint-v1 ---
+Date: 2026-10-11
+Trained on Kaggle GPU: 254 synthetic messages (692 train items, 76 calibration), 4 epochs, seed 42
+Kaggle's own eval (186 held-out items, all questions pooled):
+  accuracy 0.52 -> 0.94 | ECE (calibration error) 0.32 -> 0.036 | 0 overlapping items
+
+data/test_synthetic.jsonl (62 messages)
+  team        accuracy 52/62 = 84%
+  asset       accuracy 62/62 = 100%
+  is_problem  accuracy 61/62 = 98%
+  Laya would handle 46/62 = 74%, accuracy on those: 43/46
+  avg confidence when right: 0.81
+  avg confidence when wrong: 0.38
+
+data/test_real.jsonl (5 messages)
+  team        accuracy 5/5 = 100%
+  asset       accuracy 5/5 = 100%
+  is_problem  accuracy 3/4 = 75%
+  Laya would handle 4/5 = 80%, accuracy on those: 4/4
+  avg confidence when right: 0.84
+
+--- BEFORE vs AFTER (synthetic test, 62 messages) ---
+                          Before    After
+  team accuracy            47%       84%
+  asset accuracy           90%      100%
+  is_problem accuracy      18%       98%
+  handled by Laya (>=0.5)  18%       74%
+  accuracy on handled      7/11     43/46
+  confidence right/wrong   0.44/0.34  0.81/0.38
+
+--- Threshold check (laya-maint-v1, synthetic test) ---
+  0.3: handles 52/62, right 47/52 (90%) | 0.4: 47/62, 44/47 (94%)
+  0.5: 46/62, 43/46 (93%)  | 0.6: 46/62, 43/46 (93%)  | 0.7: 45/62, 42/45 (93%)
+  0.8: 41/62, 39/41 (95%)
+  Decision: keep 0.5 for now. 0.5-0.7 give the same errors; 0.8 drops 5 messages to avoid 1 error.
+
+--- Error analysis: confidently wrong (team) ---
+  0.92 "motor ka bearing itna garam ... jalan ho rahi hai" mechanical -> electrical
+  0.91 "Motor chal raha hai but screen pe number ... kood raha hai" instrumentation -> electrical
+  0.73 "motor ki base hil rahi hai ... bolts loose" mechanical -> electrical
+  All 3 contain the word "motor" -> shortcut learned from the synthetic data:
+  most "motor" messages were electrical (burning smell, humming, shock).
+  Fix for v2: generate mechanical + instrumentation messages that mention the motor,
+  and electrical messages that don't. Threshold cannot fix this; data can.

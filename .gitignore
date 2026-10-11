@@ -5,3 +5,5 @@ data/*.db
 data/*.csv
 *.pyc
 data/*.jsonl
+checkpoints/
+*.zip
